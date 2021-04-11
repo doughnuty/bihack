@@ -44,19 +44,39 @@ func (u *user) dbGetUserScore(db *sql.DB, uid string) error {
 		u.in_progress[status] += score
 	}
 
-	return err
+	return nil
 }
 
 func (i *item) dbGetItemByCode(db *sql.DB) error {
 	// insert into types if conflict select from its type id
 	// or check if type empty: y - select, n - insert
+	if len(i.class) == 0 {
+		err := db.QueryRow("SELECT types.name FROM items LEFT JOIN types ON items.type_id=types.id WHERE scan=$1", i.code).Scan(i.class)
+		if err != nil {
+			return err
+		}
+	} else {
+		var id int
+		err := db.QueryRow("SELECT id FROM types WHERE name=$1", i.class).Scan(&id)
+		if err != nil {
+			return err
+		}
+		_, err = db.Exec("INSERT INTO items (scan, type_id) VALUES($1, $2)", i.code, id)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *record) dbCreateRecord(db *sql.DB) error {
 	// insert into history all data
+	return nil
 }
 
 func dbCompareCoords(db *sql.DB, coords string) error {
 	// if close enough update status in db
 	// else do nothings
+	return nil
 }
