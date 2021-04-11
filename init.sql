@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public."statuses" (
 CREATE TABLE IF NOT EXISTS public."users" (
     id serial not null, 
     score integer,
-    fid text,
+    fid text UNIQUE,
     name text,
     CONSTRAINT "users_pk" PRIMARY KEY (id)
 );
