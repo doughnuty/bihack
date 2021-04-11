@@ -89,8 +89,17 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 func (a *App) getItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	icode := vars["item"]
+	i := item{code: icode}
 
-	if i, err := dbGetItemByCode(a.DB, icode); err != nil {
+	// check if empty
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&i); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	if err := i.dbGetItemByCode(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -99,7 +108,7 @@ func (a *App) getItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) addHistoryRecord(w http.ResponseWriter, r *http.Request) {
-	var rec Record
+	var rec record
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&rec); err != nil {
@@ -117,13 +126,7 @@ func (a *App) addHistoryRecord(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) setComplete(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	coords := vars["coordinate"]
 
-	if err := dbCompareCoords(a.DB, coords); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
 }
 
 func (a *App) addResidence(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +148,13 @@ func (a *App) addResidence(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getGPSCoords(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	coords := vars["coordinate"]
 
+	if err := dbCompareCoords(a.DB, coords); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
