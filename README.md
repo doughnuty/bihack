@@ -18,7 +18,7 @@
 ## GetItem
 Получить тип товара по бар коду и добавить его в бд если это первый окуранс
 
-`GET /bihack/rest/item/[bar-code]/`
+`POST /bihack/rest/item/[bar-code]/`
     
     {
         "type": "plastic"
