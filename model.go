@@ -11,6 +11,12 @@ type user struct {
 	In_progress map[string]int `json:"in_progress"`
 }
 
+type user_data struct {
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
+	Firebase string `json:"fid"`
+}
+
 type item struct {
 	Code  string `json:"code"`
 	Class string `json:"type"`
@@ -33,6 +39,15 @@ type GPS struct {
 	ID   string  `json:"id"`
 	Lat  float64 `json:"lat"`
 	Long float64 `json:"long"`
+}
+
+func (u *user_data) dbInitUser(db *sql.DB) error {
+	_, err := db.Exec("INSERT INTO users (fid, name, surname) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", u.Firebase, u.Name, u.Surname)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u *user) dbGetUserScore(db *sql.DB, uid string) error {
@@ -63,19 +78,6 @@ func (i *item) dbGetItemByCode(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-
-	// 	err := db.QueryRow("SELECT id FROM types WHERE name=$1", i.Class).Scan(&id)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// } else {
-	// 	var id int
-	// 	_, err = db.Exec("INSERT INTO items (scan, type_id) $1, $2)", i.Code, id)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
 
 	return nil
 }

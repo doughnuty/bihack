@@ -65,13 +65,31 @@ func (a *App) handleRequests() {
 			h.ServeHTTP(w, r)
 		})
 	})
-	a.Router.HandleFunc("/bihack/rest/users/{user}", a.getUser).Methods("POST")
+	a.Router.HandleFunc("/bihack/rest/users/new/", a.initUser).Methods("POST")
+	a.Router.HandleFunc("/bihack/rest/users/{user}", a.getUser).Methods("GET")
 	a.Router.HandleFunc("/bihack/rest/item/{item}", a.getItem).Methods("GET")
 	a.Router.HandleFunc("/bihack/rest/item/new/", a.addItem).Methods("POST")
 	a.Router.HandleFunc("/bihack/rest/history/", a.addHistoryRecord).Methods("POST")
 	//a.Router.HandleFunc("/bihack/rest/complete/", a.setComplete).Methods("POST")
 	//a.Router.HandleFunc("/bihack/rest/new_residential/", a.addResidence).Methods("POST")
 	a.Router.HandleFunc("/bihack/rest/coords/", a.getGPSCoords).Methods("POST")
+}
+
+func (a *App) initUser(w http.ResponseWriter, r *http.Request) {
+	var u user_data
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&u); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	if err := u.dbInitUser(a.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, 0)
 }
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
