@@ -125,9 +125,9 @@ func (a *App) addHistoryRecord(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, 0)
 }
 
-func (a *App) setComplete(w http.ResponseWriter, r *http.Request) {
+// func (a *App) setComplete(w http.ResponseWriter, r *http.Request) {
 
-}
+// }
 
 func (a *App) addResidence(w http.ResponseWriter, r *http.Request) {
 	var res Residence
@@ -155,6 +155,8 @@ func (a *App) getGPSCoords(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	respondWithJSON(w, http.StatusOK, 0)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
