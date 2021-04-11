@@ -65,12 +65,13 @@ func (a *App) handleRequests() {
 			h.ServeHTTP(w, r)
 		})
 	})
-	a.Router.HandleFunc("/bihack/rest/users/{firebase_id_or_whatever/user}", a.getUser).Methods("GET")
-	a.Router.HandleFunc("/bihack/rest/item/{bar-code/item}", a.getItem).Methods("GET")
+	a.Router.HandleFunc("/bihack/rest/users/{user}", a.getUser).Methods("POST")
+	a.Router.HandleFunc("/bihack/rest/item/{item}", a.getItem).Methods("GET")
+	a.Router.HandleFunc("/bihack/rest/item/new/", a.addItem).Methods("POST")
 	a.Router.HandleFunc("/bihack/rest/history/", a.addHistoryRecord).Methods("POST")
 	//a.Router.HandleFunc("/bihack/rest/complete/", a.setComplete).Methods("POST")
-	a.Router.HandleFunc("/bihack/rest/new_residential/", a.addResidence).Methods("POST")
-	a.Router.HandleFunc("/bihack/rest/coords/{COORD_STRING}", a.getGPSCoords).Methods("GET")
+	//a.Router.HandleFunc("/bihack/rest/new_residential/", a.addResidence).Methods("POST")
+	a.Router.HandleFunc("/bihack/rest/coords/", a.getGPSCoords).Methods("POST")
 }
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
@@ -89,9 +90,19 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 func (a *App) getItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	icode := vars["item"]
-	i := item{code: icode}
+	i := item{Code: icode}
 
-	// check if empty
+	if err := i.dbGetItemByCode(a.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, i)
+}
+
+func (a *App) addItem(w http.ResponseWriter, r *http.Request) {
+	var i item
+
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&i); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
@@ -99,7 +110,7 @@ func (a *App) getItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := i.dbGetItemByCode(a.DB); err != nil {
+	if err := i.dbAddItem(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -129,29 +140,35 @@ func (a *App) addHistoryRecord(w http.ResponseWriter, r *http.Request) {
 
 // }
 
-func (a *App) addResidence(w http.ResponseWriter, r *http.Request) {
-	var res Residence
+// func (a *App) addResidence(w http.ResponseWriter, r *http.Request) {
+// 	var res Residence
+
+// decoder := json.NewDecoder(r.Body)
+// if err := decoder.Decode(&res); err != nil {
+// 	respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+// 	return
+// }
+// defer r.Body.Close()
+
+// 	if err := res.dbAddNewResidence(a.DB); err != nil {
+// 		respondWithError(w, http.StatusInternalServerError, err.Error())
+// 		return
+// 	}
+
+// 	respondWithJSON(w, http.StatusOK, 0)
+// }
+
+func (a *App) getGPSCoords(w http.ResponseWriter, r *http.Request) {
+	var c GPS
 
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&res); err != nil {
+	if err := decoder.Decode(&c); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer r.Body.Close()
 
-	if err := res.dbAddNewResidence(a.DB); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, 0)
-}
-
-func (a *App) getGPSCoords(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	coords := vars["coordinate"]
-
-	if err := dbCompareCoords(a.DB, coords); err != nil {
+	if err := dbCompareCoords(a.DB, c); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
