@@ -25,11 +25,24 @@ type residence struct {
 }
 
 func (u *user) dbGetUserScore(db *sql.DB, uid string) error {
-	// select amount from history left join users where user.name=$1 and status=1
-	// select amount from history left join users where user.name=$1 and status=2
-	// select amount from history left join users where user.name=$1 and status=3
-	// add to map in progress each with key type name and amount as value
-	// sum all the values and add them to score
+	rows, err := db.Query(`SELECT amount, statuses.name FROM history 
+							LEFT JOIN users ON history.uid=users.id 
+							LEFT JOIN statuses ON status_id=statuses.id 
+							WHERE users.fid=$1`, uid)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var score int
+		var status string
+		if err := rows.Scan(&score, &status); err != nil {
+			return err
+		}
+		u.score += score
+		u.in_progress[status] += score
+	}
 
 	return err
 }
