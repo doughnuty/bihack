@@ -67,6 +67,7 @@ func (a *App) handleRequests() {
 	})
 	a.Router.HandleFunc("/bihack/rest/users/new/", a.initUser).Methods("POST")
 	a.Router.HandleFunc("/bihack/rest/users/{user}", a.getUser).Methods("GET")
+	a.Router.HandleFunc("/bihack/rest/users/leaderboard", a.getLeaderboard).Methods("GET")
 	a.Router.HandleFunc("/bihack/rest/item/{item}", a.getItem).Methods("GET")
 	a.Router.HandleFunc("/bihack/rest/item/new/", a.addItem).Methods("POST")
 	a.Router.HandleFunc("/bihack/rest/history/", a.addHistoryRecord).Methods("POST")
@@ -103,6 +104,39 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, u)
+}
+
+type leaders struct {
+	user      user
+	user_data user_data
+}
+
+func (a *App) getLeaderboard(w http.ResponseWriter, r *http.Request) {
+	user_ids, err := dbGetUsers(a.DB)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	users := make([]leaders, 0, 10)
+	for _, id := range user_ids {
+		var l leaders
+		var u user
+		if err := u.dbGetUserScore(a.DB, id); err != nil {
+			continue
+		}
+		l.user = u
+
+		var u_data user_data
+		if err := u_data.dbGetUserData(a.DB, id); err != nil {
+			continue
+		}
+		l.user_data = u_data
+
+		users = append(users, l)
+	}
+
+	respondWithJSON(w, http.StatusOK, users)
 }
 
 func (a *App) getItem(w http.ResponseWriter, r *http.Request) {

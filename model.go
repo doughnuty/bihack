@@ -135,3 +135,27 @@ func dbCompareCoords(db *sql.DB, coords GPS) error {
 	}
 	return nil
 }
+
+func dbGetUsers(db *sql.DB) ([]string, error) {
+	userids := make([]string, 0, 10)
+
+	rows, err := db.Query("SELECT fid from users")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		id := ""
+		rows.Scan(&id)
+		userids = append(userids, id)
+	}
+
+	return userids, nil
+}
+
+func (u *user_data) dbGetUserData(db *sql.DB, fid string) error {
+	err := db.QueryRow("SELECT name, surname FROM users WHERE fid=$1", fid).Scan(&u.Name, &u.Surname)
+
+	return err
+}
